@@ -25,6 +25,7 @@ class Behavior extends BaseObject
     /**
      * @var Component|null the owner of this behavior
      */
+    // 指向行为本身所绑定的Component对象
     public $owner;
 
 
@@ -56,6 +57,8 @@ class Behavior extends BaseObject
      *
      * @return array events (array keys) and the corresponding event handler methods (array values).
      */
+    // Behavior 基类本身没用，主要是子类使用，重载这个函数返回一个数组表
+    // 示行为所关联的事件
     public function events()
     {
         return [];
@@ -68,10 +71,16 @@ class Behavior extends BaseObject
      * Make sure you call the parent implementation if you override this method.
      * @param Component $owner the component that this behavior is to be attached to.
      */
+    // 绑定行为到 $owner // 这里 $owner 是某个 ActiveRecord
     public function attach($owner)
     {
         $this->owner = $owner;
+        // 遍历 events() 所定义的数组
         foreach ($this->events() as $event => $handler) {
+            // 调用 ActiveRecord::on 来绑定事件
+            // 这里 $handler 为字符串 `evaluateAttributes`
+            // 因此，相当于调用 on(BaseActiveRecord::EVENT_BEFORE_INSERT,
+            // [$this, 'evaluateAttributes'])
             $owner->on($event, is_string($handler) ? [$this, $handler] : $handler);
         }
     }
@@ -82,9 +91,12 @@ class Behavior extends BaseObject
      * and detach event handlers declared in [[events]].
      * Make sure you call the parent implementation if you override this method.
      */
+    // 解除绑定
     public function detach()
     {
+        // 这得是个名花有主的行为才有解除一说
         if ($this->owner) {
+            // 遍历行为定义的事件，一一解除
             foreach ($this->events() as $event => $handler) {
                 $this->owner->off($event, is_string($handler) ? [$this, $handler] : $handler);
             }

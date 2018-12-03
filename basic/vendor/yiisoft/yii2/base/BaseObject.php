@@ -129,11 +129,11 @@ class BaseObject implements Configurable
      * @throws InvalidCallException if the property is write-only
      * @see __set()
      */
-    public function __get($name)
+    public function __get($name)                // 这里$name是属性名
     {
-        $getter = 'get' . $name;
+        $getter = 'get' . $name;                // getter函数的函数名
         if (method_exists($this, $getter)) {
-            return $this->$getter();
+            return $this->$getter();            // 调用了getter函数
         } elseif (method_exists($this, 'set' . $name)) {
             throw new InvalidCallException('Getting write-only property: ' . get_class($this) . '::' . $name);
         }

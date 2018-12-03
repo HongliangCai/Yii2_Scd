@@ -51,10 +51,12 @@ abstract class Application extends Module
     /**
      * @event Event an event raised before the application starts to handle a request.
      */
+    // 定义事件
     const EVENT_BEFORE_REQUEST = 'beforeRequest';
     /**
      * @event Event an event raised after the application successfully handles a request (before the response is sent out).
      */
+    // 定义事件
     const EVENT_AFTER_REQUEST = 'afterRequest';
     /**
      * Application state used by [[state]]: application just started.

@@ -103,6 +103,7 @@ class Component extends BaseObject
     /**
      * @var array the attached event handlers (event name => handlers)
      */
+    // 这个是handler数组
     private $_events = [];
     /**
      * @var array the event handlers attached for wildcard patterns (event name wildcard => handlers)
@@ -143,6 +144,7 @@ class Component extends BaseObject
         $this->ensureBehaviors();
         foreach ($this->_behaviors as $behavior) {
             if ($behavior->canGetProperty($name)) {
+                // 属性在行为中须为 public。否则不可能通过下面的形式访问呀。
                 return $behavior->$name;
             }
         }
@@ -511,6 +513,7 @@ class Component extends BaseObject
      * handler list.
      * @see off()
      */
+    // 绑定过程就是将handler写入_event[]
     public function on($name, $handler, $data = null, $append = true)
     {
         $this->ensureBehaviors();
@@ -551,6 +554,7 @@ class Component extends BaseObject
         if (empty($this->_events[$name]) && empty($this->_eventWildcards[$name])) {
             return false;
         }
+        // $handler === null 时解除所有的handler
         if ($handler === null) {
             unset($this->_events[$name], $this->_eventWildcards[$name]);
             return true;
@@ -559,6 +563,7 @@ class Component extends BaseObject
         $removed = false;
         // plain event names
         if (isset($this->_events[$name])) {
+            // 遍历所有的 $handler
             foreach ($this->_events[$name] as $i => $event) {
                 if ($event[0] === $handler) {
                     unset($this->_events[$name][$i]);
@@ -622,10 +627,14 @@ class Component extends BaseObject
             }
             $event->handled = false;
             $event->name = $name;
+            // 遍历handler数组，并依次调用
             foreach ($eventHandlers as $handler) {
                 $event->data = $handler[1];
+                // 使用PHP的call_user_func调用handler
                 call_user_func($handler[0], $event);
                 // stop further handling if the event is handled
+                // 如果在某一handler中，将$evnet->handled 设为true，
+                // 就不再调用后续的handler
                 if ($event->handled) {
                     return;
                 }
@@ -633,7 +642,7 @@ class Component extends BaseObject
         }
 
         // invoke class-level attached handlers
-        Event::trigger($this, $name, $event);
+        Event::trigger($this, $name, $event);// 触发类一级的事件
     }
 
     /**
@@ -728,8 +737,12 @@ class Component extends BaseObject
      */
     public function ensureBehaviors()
     {
+        // 为null表示尚未绑定
+        // 为空数组表示没有绑定任何行为
         if ($this->_behaviors === null) {
             $this->_behaviors = [];
+
+            // 遍历 $this->behaviors() 返回的数组，并绑定
             foreach ($this->behaviors() as $name => $behavior) {
                 $this->attachBehaviorInternal($name, $behavior);
             }
@@ -746,13 +759,17 @@ class Component extends BaseObject
      */
     private function attachBehaviorInternal($name, $behavior)
     {
+        // 不是 Behavior 实例，说是只是类名、配置数组，那么就创建出来吧
         if (!($behavior instanceof Behavior)) {
             $behavior = Yii::createObject($behavior);
         }
+        // 匿名行为
         if (is_int($name)) {
             $behavior->attach($this);
             $this->_behaviors[] = $behavior;
+            // 命名行为
         } else {
+            // 已经有一个同名的行为，要先解除，再将新的行为绑定上去。
             if (isset($this->_behaviors[$name])) {
                 $this->_behaviors[$name]->detach();
             }
