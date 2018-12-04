@@ -63,7 +63,9 @@ class Application extends \yii\base\Application
     protected function bootstrap()
     {
         $request = $this->getRequest();
+        //@webroot 就是入口脚本 index.php 所在的目录
         Yii::setAlias('@webroot', dirname($request->getScriptFile()));
+        //@web 则是URL别名，表示当前应用的根URL地址 
         Yii::setAlias('@web', $request->getBaseUrl());
 
         parent::bootstrap();

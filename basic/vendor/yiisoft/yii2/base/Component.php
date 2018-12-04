@@ -182,13 +182,18 @@ class Component extends BaseObject
             $this->$setter($value);
 
             return;
+            // 'on ' 打头的配置项在这里处理
         } elseif (strncmp($name, 'on ', 3) === 0) {
             // on event: attach event handler
+            // 对于 'on event' 配置项，将配置值作为事件 handler 绑定到 evnet 上去
             $this->on(trim(substr($name, 3)), $value);
 
             return;
+            // 'as ' 打头的配置项在这里处理
         } elseif (strncmp($name, 'as ', 3) === 0) {
             // as behavior: attach behavior
+            // 对于 'as behavior' 配置项，将配置值作为创建Behavior的配置，创
+            // 建后绑定为 behavior
             $name = trim(substr($name, 3));
             $this->attachBehavior($name, $value instanceof Behavior ? $value : Yii::createObject($value));
 

@@ -58,6 +58,7 @@ class Instance
     /**
      * @var string the component ID, class name, interface name or alias name
      */
+    // 仅有的属性，用于保存类名、接口名或者别名
     public $id;
 
 
@@ -65,6 +66,7 @@ class Instance
      * Constructor.
      * @param string $id the component ID
      */
+    // 构造函数，仅将传入的ID赋值给 $id 属性
     protected function __construct($id)
     {
         $this->id = $id;
@@ -75,6 +77,7 @@ class Instance
      * @param string $id the component ID
      * @return Instance the new Instance object.
      */
+    // 静态方法创建一个Instance实例
     public static function of($id)
     {
         return new static($id);
@@ -108,6 +111,7 @@ class Instance
      * @return object the object referenced by the Instance, or `$reference` itself if it is an object.
      * @throws InvalidConfigException if the reference is invalid
      */
+    // 静态方法，用于将引用解析成实际的对象，并确保这个对象的类型
     public static function ensure($reference, $type = null, $container = null)
     {
         if (is_array($reference)) {
@@ -155,6 +159,7 @@ class Instance
      * If null, the method will first try `Yii::$app` then `Yii::$container`.
      * @return object the actual object referenced by this Instance object.
      */
+    
     public function get($container = null)
     {
         if ($container) {

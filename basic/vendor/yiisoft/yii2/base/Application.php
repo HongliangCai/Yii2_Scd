@@ -225,7 +225,7 @@ abstract class Application extends Module
         if (!isset($config['id'])) {
             throw new InvalidConfigException('The "id" configuration for the Application is required.');
         }
-        //设置别名：@app，@vendor，@bower，@npm，@runtime
+        //设置别名：@app，@vendor，@bower，@npm，@runtime 并在设置后，删除$config中的相应配置项
         if (isset($config['basePath'])) {
             $this->setBasePath($config['basePath']);
             unset($config['basePath']);
@@ -260,13 +260,15 @@ abstract class Application extends Module
 
             unset($config['container']);
         }
-        ////5.合并核心组件配置到自定义组件配置：数组$config['components']
+        ////合并核心组件配置到自定义组件配置：数组$config['components']
         //（核心组件有哪些参考：yii\web\Application::coreComponents()）
         //（注意：这个方法中$config使用了引用，所以合并$config['components']可以改变$config原来的值）
         // merge core components with custom components
         foreach ($this->coreComponents() as $id => $component) {
+            // 配置文件中没有的，使用核心组件的配置
             if (!isset($config['components'][$id])) {
                 $config['components'][$id] = $component;
+            // 配置文件中有的，但并未指组件的class的，使用核心组件的class    
             } elseif (is_array($config['components'][$id]) && !isset($config['components'][$id]['class'])) {
                 $config['components'][$id]['class'] = $component['class'];
             }
@@ -290,11 +292,13 @@ abstract class Application extends Module
      */
     protected function bootstrap()
     {
+         // 将 extensions.php 的内容读取进 $this->extensions 备用
         if ($this->extensions === null) {
              //@vendor/yiisoft/extensions.php是一些关于第三方扩展的配置，当用composer require安装第三扩展的时候就会将新的扩展的相关信息记录到该文件，这样我们就可以在代码中调用了
             $file = Yii::getAlias('@vendor/yiisoft/extensions.php');
             $this->extensions = is_file($file) ? include $file : [];
         }
+        // 遍历 $this->extensions 并注册别名
         foreach ($this->extensions as $extension) {
             if (!empty($extension['alias'])) {
                 foreach ($extension['alias'] as $name => $path) {
@@ -442,6 +446,7 @@ abstract class Application extends Module
      */
     public function getRuntimePath()
     {
+        // 在未设置runtimePath时，使用默认值
         if ($this->_runtimePath === null) {
             $this->setRuntimePath($this->getBasePath() . DIRECTORY_SEPARATOR . 'runtime');
         }
@@ -453,6 +458,7 @@ abstract class Application extends Module
      * Sets the directory that stores runtime files.
      * @param string $path the directory that stores runtime files.
      */
+    // 这里定义了 @runtime 别名
     public function setRuntimePath($path)
     {
         $this->_runtimePath = Yii::getAlias($path);
@@ -468,6 +474,7 @@ abstract class Application extends Module
      */
     public function getVendorPath()
     {
+        // 在未设置vendorPath时，使用默认值
         if ($this->_vendorPath === null) {
             $this->setVendorPath($this->getBasePath() . DIRECTORY_SEPARATOR . 'vendor');
         }
@@ -479,6 +486,7 @@ abstract class Application extends Module
      * Sets the directory that stores vendor files.
      * @param string $path the directory that stores vendor files.
      */
+    // 这里定义了3个别名
     public function setVendorPath($path)
     {
         $this->_vendorPath = Yii::getAlias($path);
