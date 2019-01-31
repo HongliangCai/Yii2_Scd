@@ -32,6 +32,9 @@ use yii\base\InvalidConfigException;
  */
 class UrlRule extends BaseObject implements UrlRuleInterface
 {
+    // 用于 $mode 表示路由规则的2种工作模式：仅用于解析请求和仅用于生成URL。
+    // 任意不为1或2的值均表示两种模式同时适用，
+    // 一般未设定或为0时即表示两种模式均适用。
     /**
      * Set [[mode]] with this value to mark that this rule is for URL parsing only.
      */
@@ -70,34 +73,39 @@ class UrlRule extends BaseObject implements UrlRuleInterface
     /**
      * @var string the name of this rule. If not set, it will use [[pattern]] as the name.
      */
-    public $name;
+    public $name; // 路由规则名称
     /**
      * On the rule initialization, the [[pattern]] matching parameters names will be replaced with [[placeholders]].
      * @var string the pattern used to parse and create the path info part of a URL.
      * @see host
      * @see placeholders
      */
-    public $pattern;
+    public $pattern; // 用于解析请求或生成URL的模式，通常是正则表达式
     /**
      * @var string the pattern used to parse and create the host info part of a URL (e.g. `http://example.com`).
      * @see pattern
      */
-    public $host;
+    public $host;    // 用于解析或创建URL时，处理主机信息的部分，如 http://www.digpage.com
     /**
      * @var string the route to the controller action
      */
-    public $route;
+    public $route;  // 指向controller 和 action 的路由
     /**
      * @var array the default GET parameters (name => value) that this rule provides.
      * When this rule is used to parse the incoming request, the values declared in this property
      * will be injected into $_GET.
      */
+    // 以一组键值对数组指定若干GET参数，在当前规则用于解析请求时，
+    // 这些GET参数会被注入到 $_GET 中去
     public $defaults = [];
     /**
      * @var string the URL suffix used for this rule.
      * For example, ".html" can be used so that the URL looks like pointing to a static HTML page.
      * If not set, the value of [[UrlManager::suffix]] will be used.
      */
+    // 指定URL的后缀，通常是诸如 ".html" 等，
+    // 使得一个URL看起来好像指向一个静态页面。
+    // 如果这个值未设定，使用 UrlManager::suffix 的值。
     public $suffix;
     /**
      * @var string|array the HTTP verb (e.g. GET, POST, DELETE) that this rule should match.
@@ -105,6 +113,10 @@ class UrlRule extends BaseObject implements UrlRuleInterface
      * If this property is not set, the rule can match any verb.
      * Note that this property is only used when parsing a request. It is ignored for URL creation.
      */
+     // 指定当前规则适用的HTTP方法，如 GET, POST, DELETE 等。
+    // 可以使用数组表示同时适用于多个方法。
+    // 如果未设定，表明当前规则适用于所有方法。
+    // 当然，这个属性仅在解析请求时有效，在生成URL时是无效的。
     public $verb;
     /**
      * @var int a value indicating if this rule should be used for both request parsing and URL creation,
@@ -113,10 +125,13 @@ class UrlRule extends BaseObject implements UrlRuleInterface
      * If it is [[PARSING_ONLY]], the rule is for request parsing only.
      * If it is [[CREATION_ONLY]], the rule is for URL creation only.
      */
+    // 表明当前规则的工作模式，取值可以是 0, PARSING_ONLY, CREATION_ONLY。
+    // 未设定时等同于0。
     public $mode;
     /**
      * @var bool a value indicating if parameters should be url encoded.
      */
+    // 表明URL中的参数是否需要进行url编码，默认是进行。
     public $encodeParams = true;
     /**
      * @var UrlNormalizer|array|false|null the configuration for [[UrlNormalizer]] used by this rule.
@@ -146,18 +161,22 @@ class UrlRule extends BaseObject implements UrlRuleInterface
     /**
      * @var string the template for generating a new URL. This is derived from [[pattern]] and is used in generating URL.
      */
+    // 用于生成新URL的模板
     private $_template;
     /**
      * @var string the regex for matching the route part. This is used in generating URL.
      */
+      // 一个用于匹配路由部分的正则表达式，用于生成URL
     private $_routeRule;
     /**
      * @var array list of regex for matching parameters. This is used in generating URL.
      */
+    // 用于保存一组匹配参数的正则表达式，用于生成URL
     private $_paramRules = [];
     /**
      * @var array list of parameters used in the route.
      */
+    // 保存一组路由中使用的参数
     private $_routeParams = [];
 
 
@@ -188,12 +207,17 @@ class UrlRule extends BaseObject implements UrlRuleInterface
      */
     public function init()
     {
+         // 一个路由规则必定要有 pattern ，否则是没有意义的，
+        // 一个什么都没规定的规定，要来何用？
         if ($this->pattern === null) {
             throw new InvalidConfigException('UrlRule::pattern must be set.');
         }
+        // 不指定规则匹配后所要指派的路由，Yii怎么知道将请求交给谁来处理？
+        // 不指定路由，Yii怎么知道这个规则可以为谁创建URL？
         if ($this->route === null) {
             throw new InvalidConfigException('UrlRule::route must be set.');
         }
+        
         if (is_array($this->normalizer)) {
             $normalizerConfig = array_merge(['class' => UrlNormalizer::className()], $this->normalizer);
             $this->normalizer = Yii::createObject($normalizerConfig);
@@ -201,6 +225,9 @@ class UrlRule extends BaseObject implements UrlRuleInterface
         if ($this->normalizer !== null && $this->normalizer !== false && !$this->normalizer instanceof UrlNormalizer) {
             throw new InvalidConfigException('Invalid config for UrlRule::normalizer.');
         }
+        // 如果定义了一个或多个verb，说明规则仅适用于特定的HTTP方法。
+        // 既然是HTTP方法，那就要全部大写。
+        // verb的定义可以是字符串（单一的verb）或数组（单一或多个verb）。
         if ($this->verb !== null) {
             if (is_array($this->verb)) {
                 foreach ($this->verb as $i => $verb) {
@@ -210,6 +237,8 @@ class UrlRule extends BaseObject implements UrlRuleInterface
                 $this->verb = [strtoupper($this->verb)];
             }
         }
+        // 若未指定规则的名称，那么使用最能区别于其他规则的 $pattern
+        // 作为规则的名称
         if ($this->name === null) {
             $this->name = $this->pattern;
         }
@@ -218,24 +247,32 @@ class UrlRule extends BaseObject implements UrlRuleInterface
     }
 
     /**
-     * Process [[$pattern]] on rule initialization.
+     * Process [[$pattern]] on rule initialization. // 用于解析请求，由UrlRequestInterface接口要求
      */
     private function preparePattern()
     {
         $this->pattern = $this->trimSlashes($this->pattern);
         $this->route = trim($this->route, '/');
-
+        // 如果定义了 host ，将 host 部分加在 pattern 前面，作为新的 pattern
         if ($this->host !== null) {
+            // 写入的host末尾如果已经包含有 "/" 则去掉，特别是重复的 "/"
             $this->host = rtrim($this->host, '/');
             $this->pattern = rtrim($this->host . '/' . $this->pattern, '/');
+        // 既未定义 host ，pattern 又是空的，那么 pattern 匹配任意字符串。
+        // 而基于这个pattern的，用于生成的URL的template就是空的，
+        // 意味着使用该规则生成所有URL都是空的。
+        // 后续也无需再作其他初始化工作了。
         } elseif ($this->pattern === '') {
             $this->_template = '';
             $this->pattern = '#^$#u';
 
             return;
+             // pattern 不是空串，且包含有 '://'，以此认定该pattern包含主机信息
         } elseif (($pos = strpos($this->pattern, '://')) !== false) {
+            // 除 '://' 外，第一个 '/' 之前的内容就是主机信息
             if (($pos2 = strpos($this->pattern, '/', $pos + 3)) !== false) {
                 $this->host = substr($this->pattern, 0, $pos2);
+            // '://' 后再无其他 '/'，那么整个 pattern 其实就是主机信息
             } else {
                 $this->host = $this->pattern;
             }
@@ -248,7 +285,10 @@ class UrlRule extends BaseObject implements UrlRuleInterface
         } else {
             $this->pattern = '/' . $this->pattern . '/';
         }
-
+        // route 中含有 <参数> ，则将所有参数提取成 [参数 => <参数>]
+        // 存入 _routeParams[],
+        // 如 ['controller' => '<controller>', 'action' => '<action>'],
+        // 留意这里的短路判断，先使用 strpos()，快速排除无需使用正则的情况
         if (strpos($this->route, '<') !== false && preg_match_all('/<([\w._-]+)>/', $this->route, $matches)) {
             foreach ($matches[1] as $name) {
                 $this->_routeParams[$name] = "<$name>";
@@ -266,7 +306,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
      * depending on non-optional pattern part.
      */
     private function translatePattern($allowAppendSlash)
-    {
+    {   // 这个 $tr[] 和 $tr2[] 用于字符串的转换
         $tr = [
             '.' => '\\.',
             '*' => '\\*',
@@ -280,6 +320,8 @@ class UrlRule extends BaseObject implements UrlRuleInterface
         $tr2 = [];
         $requiredPatternPart = $this->pattern;
         $oldOffset = 0;
+        // pattern 中含有 <参数名:参数pattern> ，
+        // 其中 ':参数pattern' 部分是可选的。
         if (preg_match_all('/<([\w._-]+):?([^>]+)?>/', $this->pattern, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
             $appendSlash = false;
             foreach ($matches as $match) {
@@ -452,6 +494,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
      * @param array $params the parameters
      * @return string|bool the created URL, or `false` if this rule cannot be used for creating this URL.
      */
+     // 用于生成URL，由UrlRequestInterface接口要求
     public function createUrl($manager, $route, $params)
     {
         if ($this->mode === self::PARSING_ONLY) {

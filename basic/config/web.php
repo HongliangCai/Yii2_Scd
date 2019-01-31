@@ -46,11 +46,27 @@ $config = [
         'db' => $db,
         /*
         'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'rules' => [
-            ],
-        ],
+            'enablePrettyUrl' => true,  //路由的路径化
+            'showScriptName' => false,  //隐藏入口脚本
+            'rules' => [    //参数的路径化可以通过路由规则来实现
+                yii\web\UrlManager::suffix = '.html',
+                 // 为路由指定了一个别名，以 post 的复数形式来表示 post/index 路由
+                'posts' => 'post/index',
+
+                // id 是命名参数，post/100 形式的URL，其实是 post/view&id=100
+                'post/<id:\d+>' => 'post/view',
+
+                // controller action 和 id 以命名参数形式出现
+                '<controller:(post|comment)>/<id:\d+>/<action:(create|update|delete)>'
+                    => '<controller>/<action>',
+
+                // 包含了 HTTP 方法限定，仅限于DELETE方法
+                'DELETE <controller:\w+>/<id:\d+>' => '<controller>/delete',
+
+                // 需要将 Web Server 配置成可以接收 *.digpage.com 域名的请求
+                'http://<user:\w+>.digpage.com/<lang:\w+>/profile' => 'user/profile',
+                        ],
+                    ],
         */
     ],
     'params' => $params,
